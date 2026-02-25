@@ -1,10 +1,10 @@
 # code for general evaluation
 
 import numpy as np
-import evaluate
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 
 def evaluate_classification(preds, gold):
+    import evaluate
     metric = evaluate.load("bstrai/classification_report")
     return metric.compute(predictions=preds, references=gold)
 
@@ -38,4 +38,3 @@ def eval_binary(y_true, y_pred, pos_label=1, average="binary"):
         "F1": round(F1, 3),
     }
     return metrics
-

@@ -8,9 +8,6 @@ from .factcheckgpt_utils.prompt import VERIFY_PROMPT
 from .factcheckgpt_utils.openai_api import gpt
 from .factcheckgpt_utils.data_util import save_to_file
 from .factcheckgpt_utils.prompt import IDENTIFY_STANCE_PROMPT, IDENTIFY_STANCE_PROMPT_FUNC
-from .factcheckgpt_utils.nli import nli_infer
-
-
 @Solver.register("factcheckgpt_verifier", "claims_with_evidences", "label")
 class FactCheckGPTVerifier(StandardTaskSolver):
     def __init__(self, args):
@@ -57,6 +54,7 @@ class FactCheckGPTVerifier(StandardTaskSolver):
         output: label in [support, refute, irrelevant]"""
         label = 0
         if self.stance_model == "nli":
+            from .factcheckgpt_utils.nli import nli_infer
             label = nli_infer(premise=evidence, hypothesis=claim)
         elif "gpt" in self.stance_model:
             label = self.identify_stance_gpt(evidence, claim)

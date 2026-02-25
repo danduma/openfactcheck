@@ -59,6 +59,18 @@ docs = [
   "pydata-sphinx-theme",
   "myst-parser",
 ]
+local-ml = [
+  "datasets",
+  "evaluate",
+  "sentence-transformers",
+  "torch",
+  "transformers",
+]
+ui = [
+  "seaborn",
+  "streamlit",
+  "streamlit-option-menu",
+]
 
 [tool.setuptools.package-data]
 openfactcheck = [

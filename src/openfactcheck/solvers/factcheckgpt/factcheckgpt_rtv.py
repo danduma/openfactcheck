@@ -1,7 +1,5 @@
 import re
 import bs4
-import torch
-import spacy
 import backoff
 import requests
 import itertools
@@ -9,7 +7,6 @@ import numpy as np
 import concurrent.futures
 from copy import deepcopy
 from openai import RateLimitError
-from sentence_transformers import CrossEncoder
 
 from openfactcheck import FactCheckerState, StandardTaskSolver, Solver
 
@@ -22,6 +19,16 @@ from .factcheckgpt_utils.data_util import save_txt, save_json
 class FactCheckGPTRetriever(StandardTaskSolver):
     def __init__(self, args):
         super().__init__(args)
+        try:
+            import torch
+            import spacy
+            from sentence_transformers import CrossEncoder
+        except Exception as e:
+            raise ImportError(
+                "factcheckgpt_retriever requires optional local-ML dependencies "
+                "(`torch`, `sentence-transformers`, `spacy`, and model assets)."
+            ) from e
+
         self.model = self.global_config.get("factcheckgpt_model", "gpt-4o")
         self.num_retries = self.global_config.get("num_retries", 3)
         self.tokenizer = spacy.load("en_core_web_sm", disable=["ner", "tagger", "lemmatizer"])

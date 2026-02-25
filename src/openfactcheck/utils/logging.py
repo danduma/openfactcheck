@@ -15,8 +15,15 @@ from logging import (
 from logging import captureWarnings as _captureWarnings
 from typing import Optional
 
-import datasets
-import transformers
+try:
+    import datasets  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    datasets = None
+
+try:
+    import transformers  # type: ignore
+except Exception:  # pragma: no cover - optional dependency
+    transformers = None
 
 _lock = threading.Lock()
 _default_handler: Optional[logging.Handler] = None
@@ -335,8 +342,10 @@ def enable_propagation() -> None:
     _get_library_root_logger().propagate = True
 
 
-# Disable Transformers and Datasets logging
-transformers.logging.set_verbosity_error()
-datasets.logging.set_verbosity_error()
+# Disable optional library logging if those packages are installed.
+if transformers is not None:
+    transformers.logging.set_verbosity_error()
+if datasets is not None:
+    datasets.logging.set_verbosity_error()
 logging.basicConfig(level=logging.ERROR)
 logging.getLogger("asyncio").setLevel(logging.CRITICAL)

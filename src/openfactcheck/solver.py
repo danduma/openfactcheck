@@ -1,5 +1,5 @@
-import os
 import importlib
+import os
 
 from openfactcheck.utils.logging import get_logger
 from openfactcheck.state import FactCheckerState
@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 
 # Global solver registry
 SOLVER_REGISTRY = {}
+FAILED_SOLVER_IMPORTS = {}
 
 class StandardTaskSolver:
     """
@@ -132,8 +133,11 @@ class Solver:
                 importlib.import_module(module_name)
                 logger.debug(f"Successfully imported {module_name}")
             except Exception as e:
-                logger.error(f"Failed to import {module_name}: {e}")
-                raise Exception(f"Failed to import {module_name}: {e}")
+                # Treat solver imports as optional. Some solvers require heavyweight
+                # local ML dependencies that are not needed for remote-only setups.
+                FAILED_SOLVER_IMPORTS[module_name] = repr(e)
+                logger.warning(f"Skipping solver module {module_name} due to import error: {e}")
+                return None
 
             return module_name
 
