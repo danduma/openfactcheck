@@ -8,17 +8,37 @@ from typing import Any, Dict, List, Tuple
 import bs4
 import requests
 import spacy
-import torch
-from sentence_transformers import CrossEncoder
 
-PASSAGE_RANKER = CrossEncoder(
-    "cross-encoder/ms-marco-MiniLM-L-6-v2",
-    max_length=512,
-    device="cpu",
-)
+PASSAGE_RANKER = None
 SEARCH_URL = "https://api.bing.microsoft.com/v7.0/search/"
 SUBSCRIPTION_KEY = os.getenv("AZURE_SEARCH_KEY")
-TOKENIZER = spacy.load("en_core_web_sm", disable=["ner", "tagger", "lemmatizer"])
+TOKENIZER = None
+
+
+def _get_tokenizer():
+    global TOKENIZER
+    if TOKENIZER is not None:
+        return TOKENIZER
+    TOKENIZER = spacy.load("en_core_web_sm", disable=["ner", "tagger", "lemmatizer"])
+    return TOKENIZER
+
+
+def _get_passage_ranker():
+    global PASSAGE_RANKER
+    if PASSAGE_RANKER is not None:
+        return PASSAGE_RANKER
+    try:
+        from sentence_transformers import CrossEncoder
+    except Exception as e:
+        raise ImportError(
+            "RARR retrieval requires optional dependency `sentence-transformers`."
+        ) from e
+    PASSAGE_RANKER = CrossEncoder(
+        "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        max_length=512,
+        device="cpu",
+    )
+    return PASSAGE_RANKER
 
 
 def chunk_text(
@@ -44,7 +64,7 @@ def chunk_text(
 
     passages = []
     try:
-        doc = TOKENIZER(text[:500000])  # Take 500k chars to not break tokenization.
+        doc = _get_tokenizer()(text[:500000])  # Take 500k chars to not break tokenization.
         sents = [
             s.text
             for s in doc.sents
@@ -188,7 +208,7 @@ def run_search(
             continue
 
         # Score the passages by relevance to the query using a cross-encoder.
-        scores = PASSAGE_RANKER.predict([(query, p) for p in passages]).tolist()
+        scores = _get_passage_ranker().predict([(query, p) for p in passages]).tolist()
         passage_scores = list(zip(passages, scores))
 
         # Take the top passages_per_search passages for the current search result.
@@ -212,6 +232,10 @@ def run_search(
 
         # Normalize the retreival scores into probabilities
         scores = [r["retrieval_score"] for r in retrieved_passages]
+        try:
+            import torch
+        except Exception as e:
+            raise ImportError("RARR retrieval score normalization requires optional dependency `torch`.") from e
         probs = torch.nn.functional.softmax(torch.Tensor(scores), dim=-1).tolist()
         for prob, passage in zip(probs, retrieved_passages):
             passage["score"] = prob

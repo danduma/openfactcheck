@@ -1,11 +1,7 @@
 import os
 import re
-import torch
 import string
 import numpy as np
-import seaborn as sns
-import matplotlib.pyplot as plt
-from transformers import AutoTokenizer, AutoModel
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -67,6 +63,7 @@ class SelfAwareEvaluator():
         """
         Calculate the cosine similarity between two groups of sentences.
         """
+        import torch
         # Move the model to the device
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -157,6 +154,8 @@ class SelfAwareEvaluator():
             Whether to save the figure, by default True.
         """
 
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         # Data
         unanswerable_as_pos = result["unanswerable_as_pos"]
         answerable_as_pos = result["answerable_as_pos"]
@@ -233,6 +232,8 @@ class SelfAwareEvaluator():
             Whether to save the figure, by default True.
         """
 
+        import matplotlib.pyplot as plt
+        import seaborn as sns
         # Create a new figure
         fig, ax = plt.subplots()
 
@@ -256,6 +257,8 @@ class SelfAwareEvaluator():
         return fig     
 
     def evaluate_selfaware(self, llm_responses):
+        import torch
+        from transformers import AutoModel, AutoTokenizer
         # Load the model
         model_name = "princeton-nlp/sup-simcse-roberta-large"
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -281,4 +284,3 @@ class SelfAwareEvaluator():
             result['answerable_as_pos'] = result.pop('False')
 
         return result, labels, preds
-

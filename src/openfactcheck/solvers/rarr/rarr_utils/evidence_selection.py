@@ -1,14 +1,26 @@
 import itertools
 from typing import Any, Dict, List
 
-import torch
-from sentence_transformers import CrossEncoder
+PASSAGE_RANKER = None
 
-PASSAGE_RANKER = CrossEncoder(
-    "cross-encoder/ms-marco-MiniLM-L-6-v2",
-    max_length=512,
-    device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-)
+
+def _get_passage_ranker():
+    global PASSAGE_RANKER
+    if PASSAGE_RANKER is not None:
+        return PASSAGE_RANKER
+    try:
+        import torch
+        from sentence_transformers import CrossEncoder
+    except Exception as e:
+        raise ImportError(
+            "RARR evidence selection requires optional dependencies `torch` and `sentence-transformers`."
+        ) from e
+    PASSAGE_RANKER = CrossEncoder(
+        "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        max_length=512,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+    )
+    return PASSAGE_RANKER
 
 
 def compute_score_matrix(
@@ -24,7 +36,7 @@ def compute_score_matrix(
     """
     score_matrix = []
     for q in questions:
-        evidence_scores = PASSAGE_RANKER.predict([(q, e) for e in evidences]).tolist()
+        evidence_scores = _get_passage_ranker().predict([(q, e) for e in evidences]).tolist()
         score_matrix.append(evidence_scores)
     return score_matrix
 
